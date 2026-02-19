@@ -31,10 +31,7 @@ app.get('*', (req, res) => {
 });
 
 // ── MongoDB Connection ────────────────────────────────────────────────────────
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/aop_management', {
-  useNewUrlParser:    true,
-  useUnifiedTopology: true
-})
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/aop_management')
 .then(() => {
   console.log('MongoDB connected');
   app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
