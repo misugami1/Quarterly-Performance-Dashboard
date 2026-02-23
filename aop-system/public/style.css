@@ -182,8 +182,25 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
 .error-msg.show { display: block; }
 
 /* ===== PAGES HIDDEN ===== */
-.page { display: none; min-height: 100vh; flex-direction: column; background: var(--gray-light); }
+.page { 
+  display: none; 
+  min-height: 100vh; 
+  flex-direction: column; 
+  background: transparent; /* Makes all pages transparent so the bg shows through */
+  position: relative;
+  z-index: 1;
+}
 .page.active { display: flex; }
+
+/* Global Background for ALL inner pages (Home, Create, Records, Dashboard) */
+.page::before {
+  content: '';
+  position: fixed; 
+  inset: 0;
+  /* 40% Red Overlay with bg2.png */
+  background: linear-gradient(rgba(183, 28, 28, 0.4), rgba(183, 28, 28, 0.4)), url('/images/bg2.png') center/cover no-repeat;
+  z-index: -1;
+}
 
 /* ===== TOP NAV ===== */
 .topnav {
@@ -230,22 +247,6 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
 .btn-home:hover { background: rgba(255,255,255,0.3); }
 
 /* ===== HOME PAGE ===== */
-#page-home {
-  position: relative;
-  background: transparent;
-  z-index: 1;
-}
-
-/* New bg2.jpg background with 40% Red Overlay replacing the plain white/gray background */
-#page-home::before {
-  content: '';
-  position: fixed; /* Fixed so it covers the screen even when scrolling */
-  inset: 0;
-  /* rgba(183, 28, 28, 0.4) is exactly your var(--red) color at 40% opacity */
-  background: linear-gradient(rgba(183, 28, 28, 0.4), rgba(183, 28, 28, 0.4)), url('/images/bg2.png') center/cover no-repeat;
-  z-index: -1;
-}
-
 #page-home .home-hero {
   background: transparent;
   padding: 60px 24px;
@@ -352,12 +353,12 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 1.5rem;
   font-weight: 800;
-  color: var(--white); /* Changed to white so it's readable over the red background */
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3); /* Adds a subtle shadow for readability */
+  color: var(--white);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 20px;
-  border-bottom: 3px solid var(--gold); /* Swapped underline to gold to pop against the red */
+  border-bottom: 3px solid var(--gold);
   padding-bottom: 8px;
 }
 
@@ -818,7 +819,12 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
 
 /* ===== PRINT STYLES ===== */
 @media print {
-  /* 1. Hide everything we don't want to print */
+  /* 1. Hide background images on print so you don't waste ink! */
+  .page::before, #page-login::before { 
+    display: none !important; 
+  }
+
+  /* 2. Hide everything we don't want to print */
   .topnav,
   .dash-footer,
   .btn-home,
@@ -832,7 +838,7 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
     display: none !important;
   }
 
-  /* 2. Make the background white to save ink */
+  /* 3. Make the background white to save ink */
   body, .page {
     background: #ffffff !important;
     margin: 0 !important;
@@ -840,14 +846,14 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
     min-height: auto !important;
   }
 
-  /* 3. Remove the content padding so it stretches to the paper edges */
+  /* 4. Remove the content padding so it stretches to the paper edges */
   .content {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
   }
 
-  /* 4. Format the Dashboard Header for paper */
+  /* 5. Format the Dashboard Header for paper */
   .dashboard-header-bar {
     background: #ffffff !important;
     color: var(--red) !important;
@@ -857,7 +863,7 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
     text-align: center;
   }
 
-  /* 5. Clean up the cards (remove shadows, add solid borders) */
+  /* 6. Clean up the cards (remove shadows, add solid borders) */
   .dashboard-card {
     box-shadow: none !important;
     border: 2px solid #ddd !important;
@@ -867,7 +873,7 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
     break-inside: avoid !important;
   }
 
-  /* 6. Ensure the card header keeps its colors when printing (Browsers sometimes strip background colors on print) */
+  /* 7. Ensure the card header keeps its colors when printing (Browsers sometimes strip background colors on print) */
   .dash-card-header {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
