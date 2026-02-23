@@ -267,7 +267,6 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
 }
 
 #page-home .home-hero {
-  background: linear-gradient(135deg, var(--red-dark), var(--red) 50%, var(--orange));
   padding: 60px 24px;
   text-align: center;
   color: #fff;
