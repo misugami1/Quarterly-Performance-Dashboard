@@ -1,8 +1,8 @@
 require("dotenv").config();
 const express = require("express");
-const mongoose = require("mongoose");
+const { createClient } = require('@libsql/client');
 const cors = require("cors");
-const path       = require('path');
+const path = require('path');
 
 const authRoutes = require('./routes/auth');
 const planRoutes = require('./routes/plans');
@@ -10,33 +10,55 @@ const planRoutes = require('./routes/plans');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Middleware ────────────────────────────────────────────────────────────────
+// ── Middleware ──
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files
+// Serve files and frontend
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Serve frontend (single-page app)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── API Routes ────────────────────────────────────────────────────────────────
+// ── API Routes ──
 app.use('/api/auth',  authRoutes);
 app.use('/api/plans', planRoutes);
 
-// ── SPA fallback ─────────────────────────────────────────────────────────────
+// SPA fallback
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ── MongoDB Connection ────────────────────────────────────────────────────────
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/aop_management')
-.then(() => {
-  console.log('MongoDB connected');
-  app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
-})
-.catch(err => {
-  console.error(' MongoDB connection failed:', err.message);
-  process.exit(1);
+// ── Turso Connection ──
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL || 'file:aop_database.sqlite',
+  authToken: process.env.TURSO_AUTH_TOKEN
 });
+
+// ── Initialize Tables (Cloud Version) ──
+async function initDB() {
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      email TEXT UNIQUE,
+      password TEXT
+    )`);
+
+    await db.execute(`CREATE TABLE IF NOT EXISTS plans (
+      _id TEXT PRIMARY KEY,
+      idNo INTEGER,
+      developmentArea TEXT,
+      outcome TEXT,
+      strategy TEXT,
+      rowsData TEXT, 
+      createdAt TEXT,
+      updatedAt TEXT
+    )`);
+    console.log('Turso Database connected and tables verified.');
+  } catch (err) {
+    console.error('Database initialization failed:', err);
+  }
+}
+initDB();
+
+app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));

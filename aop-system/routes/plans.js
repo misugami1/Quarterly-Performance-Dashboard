@@ -3,22 +3,27 @@ const router   = express.Router();
 const multer   = require('multer');
 const path     = require('path');
 const fs       = require('fs');
-const Plan     = require('../models/Plan');
+const { createClient } = require('@libsql/client');
 const authMiddleware = require('../middleware/auth');
 
-// ── Storage config ────────────────────────────────────────────────────────────
+// ── Turso Connection ──
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL || 'file:aop_database.sqlite',
+  authToken: process.env.TURSO_AUTH_TOKEN
+});
+
+// ── Storage config ──
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
     const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, unique + path.extname(file.originalname));
   }
 });
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } }); // 10 MB
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // helper: parse uploaded files per row
 function applyFiles(req, rows) {
@@ -34,28 +39,35 @@ function applyFiles(req, rows) {
   return rows;
 }
 
-// ── GET all plans ─────────────────────────────────────────────────────────────
+// ── GET all plans ──
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const plans = await Plan.find().sort({ createdAt: -1 });
+    const result = await db.execute('SELECT * FROM plans ORDER BY idNo DESC');
+    const plans = result.rows.map(row => ({
+      ...row,
+      rows: JSON.parse(row.rowsData || '[]')
+    }));
     res.json(plans);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// ── GET single plan ───────────────────────────────────────────────────────────
+// ── GET single plan ──
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const plan = await Plan.findById(req.params.id);
-    if (!plan) return res.status(404).json({ message: 'Plan not found' });
+    const result = await db.execute({ sql: 'SELECT * FROM plans WHERE _id = ?', args: [req.params.id] });
+    if (result.rows.length === 0) return res.status(404).json({ message: 'Plan not found' });
+    
+    const plan = result.rows[0];
+    plan.rows = JSON.parse(plan.rowsData || '[]');
     res.json(plan);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// ── POST create plan ──────────────────────────────────────────────────────────
+// ── POST create plan ──
 router.post('/', authMiddleware, upload.fields(
   Array.from({ length: 50 }, (_, i) => ({ name: `file_row_${i + 1}`, maxCount: 1 }))
 ), async (req, res) => {
@@ -63,58 +75,62 @@ router.post('/', authMiddleware, upload.fields(
     let rows = JSON.parse(req.body.rows || '[]');
     rows = applyFiles(req, rows);
 
-    const plan = new Plan({
-      developmentArea: req.body.developmentArea,
-      outcome:         req.body.outcome,
-      strategy:        req.body.strategy,
-      rows,
-      createdBy: req.user?._id
+    const maxResult = await db.execute('SELECT MAX(idNo) as maxId FROM plans');
+    const nextIdNo = Number(maxResult.rows[0]?.maxId || 0) + 1;
+    
+    const _id = 'plan_' + Date.now();
+    const now = new Date().toISOString();
+
+    await db.execute({
+      sql: `INSERT INTO plans (_id, idNo, developmentArea, outcome, strategy, rowsData, createdAt, updatedAt) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [_id, nextIdNo, req.body.developmentArea, req.body.outcome, req.body.strategy, JSON.stringify(rows), now, now]
     });
 
-    await plan.save();
-    res.status(201).json(plan);
+    res.status(201).json({ message: 'Created', _id, idNo: nextIdNo });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// ── PUT update plan ───────────────────────────────────────────────────────────
+// ── PUT update plan (Turso Version) ──
 router.put('/:id', authMiddleware, upload.fields(
   Array.from({ length: 50 }, (_, i) => ({ name: `file_row_${i + 1}`, maxCount: 1 }))
 ), async (req, res) => {
   try {
-    const plan = await Plan.findById(req.params.id);
-    if (!plan) return res.status(404).json({ message: 'Plan not found' });
+    const existingResult = await db.execute({ sql: 'SELECT * FROM plans WHERE _id = ?', args: [req.params.id] });
+    if (existingResult.rows.length === 0) return res.status(404).json({ message: 'Plan not found' });
 
-    let rows = JSON.parse(req.body.rows || '[]');
+    const existingPlan = existingResult.rows[0];
+    const existingRows = JSON.parse(existingPlan.rowsData || '[]');
+    let newRows = JSON.parse(req.body.rows || '[]');
 
-    // Preserve existing proofFile if no new file uploaded for that row
-    rows = rows.map(newRow => {
-      const existing = plan.rows.find(r => r.rowNo === newRow.rowNo);
+    newRows = newRows.map(newRow => {
+      const existing = existingRows.find(r => r.rowNo === newRow.rowNo);
       return {
         ...newRow,
-        proofFile: newRow.existingProof || existing?.proofFile || ''
+        proofFile: newRow.existingProof || (existing ? existing.proofFile : '')
       };
     });
 
-    rows = applyFiles(req, rows);
+    newRows = applyFiles(req, newRows);
+    const now = new Date().toISOString();
 
-    plan.developmentArea = req.body.developmentArea;
-    plan.outcome         = req.body.outcome;
-    plan.strategy        = req.body.strategy;
-    plan.rows            = rows;
+    await db.execute({
+      sql: `UPDATE plans SET developmentArea = ?, outcome = ?, strategy = ?, rowsData = ?, updatedAt = ? WHERE _id = ?`,
+      args: [req.body.developmentArea, req.body.outcome, req.body.strategy, JSON.stringify(newRows), now, req.params.id]
+    });
 
-    await plan.save();
-    res.json(plan);
+    res.json({ message: 'Updated successfully' });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// ── DELETE plan ───────────────────────────────────────────────────────────────
+// ── DELETE plan (Turso Version) ──
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    await Plan.findByIdAndDelete(req.params.id);
+    await db.execute({ sql: 'DELETE FROM plans WHERE _id = ?', args: [req.params.id] });
     res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
