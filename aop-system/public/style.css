@@ -160,26 +160,6 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
   background: #e0e0e0;
 }
 
-.btn-google {
-  width: 100%;
-  background: #fff;
-  color: var(--text);
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  padding: 11px;
-  font-family: 'Barlow', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.btn-google:hover { border-color: var(--red); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-.btn-google svg { width: 18px; height: 18px; }
-
 .no-account {
   text-align: center;
   margin-top: 16px;
@@ -267,6 +247,7 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
 }
 
 #page-home .home-hero {
+  background: transparent;
   padding: 60px 24px;
   text-align: center;
   color: #fff;
