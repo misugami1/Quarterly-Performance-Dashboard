@@ -29,7 +29,6 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
   content: '';
   position: absolute;
   inset: 0;
-  /* Change the URL to point to your new local folder */
   background: url('/images/bg.jpg') center/cover no-repeat;
   opacity: 0.15;
   z-index: 0;
@@ -251,6 +250,22 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
 .btn-home:hover { background: rgba(255,255,255,0.3); }
 
 /* ===== HOME PAGE ===== */
+#page-home {
+  position: relative;
+  background: transparent;
+  z-index: 1;
+}
+
+/* New bg2.jpg background with 40% Red Overlay replacing the plain white/gray background */
+#page-home::before {
+  content: '';
+  position: fixed; /* Fixed so it covers the screen even when scrolling */
+  inset: 0;
+  /* rgba(183, 28, 28, 0.4) is exactly your var(--red) color at 40% opacity */
+  background: linear-gradient(rgba(183, 28, 28, 0.4), rgba(183, 28, 28, 0.4)), url('/images/bg2.jpg') center/cover no-repeat;
+  z-index: -1;
+}
+
 #page-home .home-hero {
   background: linear-gradient(135deg, var(--red-dark), var(--red) 50%, var(--orange));
   padding: 60px 24px;
@@ -259,13 +274,7 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
   position: relative;
   overflow: hidden;
 }
-#page-home .home-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url('/images/bg.jpg') center/cover no-repeat;
-  opacity: 0.12;
-}
+
 #page-home .home-hero h2 {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 2.4rem;
@@ -363,11 +372,12 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 1.5rem;
   font-weight: 800;
-  color: var(--red);
+  color: var(--white); /* Changed to white so it's readable over the red background */
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3); /* Adds a subtle shadow for readability */
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 20px;
-  border-bottom: 3px solid var(--red);
+  border-bottom: 3px solid var(--gold); /* Swapped underline to gold to pop against the red */
   padding-bottom: 8px;
 }
 
