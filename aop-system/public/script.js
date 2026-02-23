@@ -667,7 +667,7 @@ async function loadDashboardSingle(id) {
       </div>
     `;
 
-    plan.rows.forEach((row, ri) => {
+      plan.rows.forEach((row, ri) => {
       const totalTarget = parseQValue(row.targetQ1) + parseQValue(row.targetQ2) + parseQValue(row.targetQ3) + parseQValue(row.targetQ4);
       const totalActual = parseQValue(row.actualQ1) + parseQValue(row.actualQ2) + parseQValue(row.actualQ3) + parseQValue(row.actualQ4);
       
@@ -724,7 +724,7 @@ async function loadDashboardSingle(id) {
               <span><span class="legend-dot" style="background:${hasData ? '#212121' : '#e0e0e0'};"></span>Target ${hasData ? aPct+'%' : 'N/A'}</span>
             </div>
             ${row.proofFile ? `<div class="proof-link"><br/><strong style="font-size:0.72rem;color:var(--text-muted);">PROOF/EVIDENCE</strong><br/><a href="${row.proofFile}" target="_blank">[ VIEW ]</a></div>` : `<div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted);">No proof uploaded</div>`}
-          <div class="dash-right">
+          </div> <div class="dash-right">
             <div class="dash-info-grid">
               <div class="dash-info-item">
                 <div class="dash-info-label">Office Concerned</div>
