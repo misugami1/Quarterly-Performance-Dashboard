@@ -29,8 +29,10 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
   content: '';
   position: absolute;
   inset: 0;
-  background: url('https://batstateu.edu.ph/wp-content/uploads/2020/11/Alangilan-entrance-facade.jpg') center/cover no-repeat;
+  /* Change the URL to point to your new local folder */
+  background: url('/images/bg.jpg') center/cover no-repeat;
   opacity: 0.15;
+  z-index: 0;
 }
 
 .login-header {
