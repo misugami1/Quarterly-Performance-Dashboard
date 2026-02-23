@@ -11,8 +11,4 @@ FEB 19, 2026
 
 -Print Function (Done)
 
-Note to Add
-
--Database to save the Records
-
--Login (save accounts and should be valid account as well as Google log in)
+- Deployed using Render (Turso for Database, and Cloudinary for Proof/Evidence)
