@@ -262,7 +262,7 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
   position: fixed; /* Fixed so it covers the screen even when scrolling */
   inset: 0;
   /* rgba(183, 28, 28, 0.4) is exactly your var(--red) color at 40% opacity */
-  background: linear-gradient(rgba(183, 28, 28, 0.4), rgba(183, 28, 28, 0.4)), url('/images/bg2.jpg') center/cover no-repeat;
+  background: linear-gradient(rgba(183, 28, 28, 0.4), rgba(183, 28, 28, 0.4)), url('/images/bg2.png') center/cover no-repeat;
   z-index: -1;
 }
 
