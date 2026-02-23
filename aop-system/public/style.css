@@ -263,7 +263,7 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
   content: '';
   position: absolute;
   inset: 0;
-  background: url('https://source.unsplash.com/1600x400/?campus') center/cover no-repeat;
+  background: url('/images/bg.jpg') center/cover no-repeat;
   opacity: 0.12;
 }
 #page-home .home-hero h2 {
