@@ -24,11 +24,10 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'aop_proofs',
-    resource_type: 'auto' // Crucial: 'auto' allows it to accept both images AND PDFs
+    resource_type: 'auto'
   }
 });
 
-// Enforce Cloudinary's 10MB free tier limit
 const upload = multer({ storage: storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // Helper: parse uploaded files per row
@@ -39,17 +38,19 @@ function applyFiles(req, rows) {
     if (match) {
       const rowNo = parseInt(match[1]);
       const row = rows.find(r => r.rowNo === rowNo);
-      // Cloudinary saves the secure web URL inside the 'path' variable
       if (row) row.proofFile = fileArr[0].path; 
     }
   });
   return rows;
 }
 
-// ── GET all plans ──
+// ── GET all plans (Private to User) ──
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const result = await db.execute('SELECT * FROM plans ORDER BY idNo DESC');
+    const result = await db.execute({
+      sql: 'SELECT * FROM plans WHERE userId = ? ORDER BY idNo DESC',
+      args: [req.user.id]
+    });
     const plans = result.rows.map(row => ({
       ...row,
       rows: JSON.parse(row.rowsData || '[]')
@@ -60,10 +61,13 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// ── GET single plan ──
+// ── GET single plan (Secure) ──
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const result = await db.execute({ sql: 'SELECT * FROM plans WHERE _id = ?', args: [req.params.id] });
+    const result = await db.execute({ 
+      sql: 'SELECT * FROM plans WHERE _id = ? AND userId = ?', 
+      args: [req.params.id, req.user.id] 
+    });
     if (result.rows.length === 0) return res.status(404).json({ message: 'Plan not found' });
     
     const plan = result.rows[0];
@@ -74,7 +78,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// ── POST create plan ──
+// ── POST create plan (Attach User ID) ──
 router.post('/', authMiddleware, upload.fields(
   Array.from({ length: 50 }, (_, i) => ({ name: `file_row_${i + 1}`, maxCount: 1 }))
 ), async (req, res) => {
@@ -89,9 +93,9 @@ router.post('/', authMiddleware, upload.fields(
     const now = new Date().toISOString();
 
     await db.execute({
-      sql: `INSERT INTO plans (_id, idNo, developmentArea, outcome, strategy, rowsData, createdAt, updatedAt) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [_id, nextIdNo, req.body.developmentArea, req.body.outcome, req.body.strategy, JSON.stringify(rows), now, now]
+      sql: `INSERT INTO plans (_id, idNo, developmentArea, outcome, strategy, rowsData, createdAt, updatedAt, userId) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [_id, nextIdNo, req.body.developmentArea, req.body.outcome, req.body.strategy, JSON.stringify(rows), now, now, req.user.id]
     });
 
     res.status(201).json({ message: 'Created', _id, idNo: nextIdNo });
@@ -100,12 +104,15 @@ router.post('/', authMiddleware, upload.fields(
   }
 });
 
-// ── PUT update plan (Turso Version) ──
+// ── PUT update plan (Secure) ──
 router.put('/:id', authMiddleware, upload.fields(
   Array.from({ length: 50 }, (_, i) => ({ name: `file_row_${i + 1}`, maxCount: 1 }))
 ), async (req, res) => {
   try {
-    const existingResult = await db.execute({ sql: 'SELECT * FROM plans WHERE _id = ?', args: [req.params.id] });
+    const existingResult = await db.execute({ 
+      sql: 'SELECT * FROM plans WHERE _id = ? AND userId = ?', 
+      args: [req.params.id, req.user.id] 
+    });
     if (existingResult.rows.length === 0) return res.status(404).json({ message: 'Plan not found' });
 
     const existingPlan = existingResult.rows[0];
@@ -124,8 +131,8 @@ router.put('/:id', authMiddleware, upload.fields(
     const now = new Date().toISOString();
 
     await db.execute({
-      sql: `UPDATE plans SET developmentArea = ?, outcome = ?, strategy = ?, rowsData = ?, updatedAt = ? WHERE _id = ?`,
-      args: [req.body.developmentArea, req.body.outcome, req.body.strategy, JSON.stringify(newRows), now, req.params.id]
+      sql: `UPDATE plans SET developmentArea = ?, outcome = ?, strategy = ?, rowsData = ?, updatedAt = ? WHERE _id = ? AND userId = ?`,
+      args: [req.body.developmentArea, req.body.outcome, req.body.strategy, JSON.stringify(newRows), now, req.params.id, req.user.id]
     });
 
     res.json({ message: 'Updated successfully' });
@@ -134,10 +141,13 @@ router.put('/:id', authMiddleware, upload.fields(
   }
 });
 
-// ── DELETE plan (Turso Version) ──
+// ── DELETE plan (Secure) ──
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    await db.execute({ sql: 'DELETE FROM plans WHERE _id = ?', args: [req.params.id] });
+    await db.execute({ 
+      sql: 'DELETE FROM plans WHERE _id = ? AND userId = ?', 
+      args: [req.params.id, req.user.id] 
+    });
     res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });

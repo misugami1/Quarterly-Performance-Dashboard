@@ -52,8 +52,18 @@ async function initDB() {
       strategy TEXT,
       rowsData TEXT, 
       createdAt TEXT,
-      updatedAt TEXT
+      updatedAt TEXT,
+      userId INTEGER 
     )`);
+
+    // Safely upgrade the existing live table to support private accounts
+    try {
+      await db.execute(`ALTER TABLE plans ADD COLUMN userId INTEGER`);
+      console.log('Upgraded plans table with userId column.');
+    } catch (e) {
+      // If the column already exists, it silently moves on!
+    }
+
     console.log('Turso Database connected and tables verified.');
   } catch (err) {
     console.error('Database initialization failed:', err);
