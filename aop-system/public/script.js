@@ -585,7 +585,7 @@ async function loadDashboard() {
                 <span><span class="legend-dot" style="background:${hasData ? '#f9a825' : '#e0e0e0'};"></span>Actual ${hasData ? tPct+'%' : 'N/A'}</span>
                 <span><span class="legend-dot" style="background:${hasData ? '#212121' : '#e0e0e0'};"></span>Target ${hasData ? aPct+'%' : 'N/A'}</span>
               </div>
-              ${row.proofFile ? `<div class="proof-link"><br/><strong style="font-size:0.72rem;color:var(--text-muted);">PROOF/EVIDENCE</strong><br/><a href="/uploads/${row.proofFile}" target="_blank">[ VIEW ]</a></div>` : `<div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted);">No proof uploaded</div>`}
+              ${row.proofFile ? `<div class="proof-link"><br/><strong style="font-size:0.72rem;color:var(--text-muted);">PROOF/EVIDENCE</strong><br/><a href="${row.proofFile}" target="_blank">[ VIEW ]</a></div>` : `<div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted);">No proof uploaded</div>`}
             </div>
             <div class="dash-right">
               <div class="dash-info-grid">
