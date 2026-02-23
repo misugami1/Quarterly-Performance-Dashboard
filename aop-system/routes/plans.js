@@ -1,8 +1,8 @@
 const express  = require('express');
 const router   = express.Router();
 const multer   = require('multer');
-const path     = require('path');
-const fs       = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
 const { createClient } = require('@libsql/client');
 const authMiddleware = require('../middleware/auth');
 
@@ -12,20 +12,26 @@ const db = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN
 });
 
-// ── Storage config ──
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+// ── Cloudinary Config ──
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
+// Tell Multer to send files directly to Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'aop_proofs',
+    resource_type: 'auto' // Crucial: 'auto' allows it to accept both images AND PDFs
   }
 });
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-// helper: parse uploaded files per row
+// Enforce Cloudinary's 10MB free tier limit
+const upload = multer({ storage: storage, limits: { fileSize: 10 * 1024 * 1024 } });
+
+// Helper: parse uploaded files per row
 function applyFiles(req, rows) {
   if (!req.files) return rows;
   Object.entries(req.files).forEach(([fieldname, fileArr]) => {
@@ -33,7 +39,8 @@ function applyFiles(req, rows) {
     if (match) {
       const rowNo = parseInt(match[1]);
       const row = rows.find(r => r.rowNo === rowNo);
-      if (row) row.proofFile = fileArr[0].filename;
+      // Cloudinary saves the secure web URL inside the 'path' variable
+      if (row) row.proofFile = fileArr[0].path; 
     }
   });
   return rows;

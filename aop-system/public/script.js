@@ -275,7 +275,7 @@ function buildRowHtml(rowNo, total, r={}) {
               <input type="file" id="r${rowNo}-file" style="display:none;" onchange="fileSelected(${rowNo},this)" accept="image/*,application/pdf"/>
               <button class="btn-file" onclick="document.getElementById('r${rowNo}-file').click()">Choose File</button>
               <span class="file-name-display" id="r${rowNo}-fname">${r.proofFile ? r.proofFile : 'No File Chosen'}</span>
-              ${r.proofFile ? `<a href="/uploads/${r.proofFile}" target="_blank" style="font-size:0.75rem;color:var(--red);font-weight:600;">[ View ]</a>` : ''}
+              ${r.proofFile ? `<a href="${r.proofFile}" target="_blank" style="font-size:0.75rem;color:var(--red);font-weight:600;">[ View ]</a>` : ''}   
             </div>
             <input type="hidden" id="r${rowNo}-existingfile" value="${esc(r.proofFile||'')}"/>
           </td>
@@ -723,8 +723,7 @@ async function loadDashboardSingle(id) {
               <span><span class="legend-dot" style="background:${hasData ? '#f9a825' : '#e0e0e0'};"></span>Actual ${hasData ? tPct+'%' : 'N/A'}</span>
               <span><span class="legend-dot" style="background:${hasData ? '#212121' : '#e0e0e0'};"></span>Target ${hasData ? aPct+'%' : 'N/A'}</span>
             </div>
-            ${row.proofFile ? `<div class="proof-link"><br/><strong style="font-size:0.72rem;color:var(--text-muted);">PROOF/EVIDENCE</strong><br/><a href="/uploads/${row.proofFile}" target="_blank">[ VIEW ]</a></div>` : `<div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted);">No proof uploaded</div>`}
-          </div>
+            ${row.proofFile ? `<div class="proof-link"><br/><strong style="font-size:0.72rem;color:var(--text-muted);">PROOF/EVIDENCE</strong><br/><a href="${row.proofFile}" target="_blank">[ VIEW ]</a></div>` : `<div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted);">No proof uploaded</div>`}
           <div class="dash-right">
             <div class="dash-info-grid">
               <div class="dash-info-item">
