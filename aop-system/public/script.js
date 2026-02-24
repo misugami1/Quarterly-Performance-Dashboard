@@ -523,50 +523,98 @@ async function loadDashboard() {
     
     let html = '';
     plans.forEach(plan => {
-      if (!plan.rows || plan.rows.length === 0) return;
+      if (!plan.rows || plan.rows.length === 0) return; 
 
-      const showViewAllBtn = plan.rows.length > 1;
+      const rowsToShow = [plan.rows[0]]; 
+      rowsToShow.forEach((row, index) => {
+        const ri = 0; 
+        
+        const totalTarget = parseQValue(row.targetQ1) + parseQValue(row.targetQ2) + parseQValue(row.targetQ3) + parseQValue(row.targetQ4);
+        const totalActual = parseQValue(row.actualQ1) + parseQValue(row.actualQ2) + parseQValue(row.actualQ3) + parseQValue(row.actualQ4);
+        
+        let tPct = 0;
+        let aPct = 0;
+        let hasData = false;
 
-      html += `
+        if (totalTarget > 0) {
+          tPct = Math.round((totalActual / totalTarget) * 100);
+          aPct = Math.max(0, 100 - tPct);
+          hasData = true;
+        } else if (totalActual > 0) {
+          tPct = 100;
+          aPct = 0;
+          hasData = true;
+        }
+
+        const canvasId = `donut-${plan._id}-${ri}`;
+        const subtotal = plan.rows.reduce((s,r)=>s+(r.totalEstCost||0),0);
+        
+        const showViewAllBtn = plan.rows.length > 1;
+
+        html += `
         <div class="dashboard-card" data-planid="${plan._id}">
           <div class="dash-card-header">
             <span>FY 2026 Annual Operational Plan · College of Engineering Alangilan Campus</span>
             <span class="dash-id-badge">ID NO. ${plan.idNo}</span>
-            <span class="dash-id-badge">Rows: ${plan.rows.length}</span>
+            <span class="dash-id-badge">ROW NO. ${ri+1}</span>
           </div>
-          <div class="dashboard-excel">
-            <div class="excel-row excel-header">
-              <div>Development Area</div>
-              <div>Outcome</div>
-              <div>Strategy</div>
-              <div>PAPs</div>
-              <div>Performance Indicator</div>
-              <div>Targets (Q1/Q2/Q3/Q4)</div>
-              <div>Actuals (Q1/Q2/Q3/Q4)</div>
-              <div>Office</div>
-              <div>Est. Cost</div>
-              <div>Fund</div>
-              <div>Risk</div>
-              <div>Mitigating Activities</div>
-              <div>Proof</div>
-            </div>
-            ${plan.rows.map(row => `
-              <div class="excel-row">
-                <div class="excel-cell">${esc(plan.developmentArea)}</div>
-                <div class="excel-cell">${esc(plan.outcome)}</div>
-                <div class="excel-cell">${esc(plan.strategy)}</div>
-                <div class="excel-cell">${esc(row.pap) || '—'}</div>
-                <div class="excel-cell">${esc(row.perfIndicator) || '—'}</div>
-                <div class="excel-cell">${esc(row.targetQ1||'')} / ${esc(row.targetQ2||'')} / ${esc(row.targetQ3||'')} / ${esc(row.targetQ4||'')}</div>
-                <div class="excel-cell">${esc(row.actualQ1||'')} / ${esc(row.actualQ2||'')} / ${esc(row.actualQ3||'')} / ${esc(row.actualQ4||'')}</div>
-                <div class="excel-cell">${esc(row.officeConcerned) || '—'}</div>
-                <div class="excel-cell">₱${(row.totalEstCost||0).toLocaleString()}</div>
-                <div class="excel-cell">${esc(row.fundSource) || '—'}</div>
-                <div class="excel-cell">${esc(row.risk) || '—'}</div>
-                <div class="excel-cell">${esc(row.mitigatingActivities) || '—'}</div>
-                <div class="excel-cell">${row.proofFile ? `<a href="${row.proofFile}" target="_blank">View</a>` : '—'}</div>
+          <table class="aop-table" style="border-bottom:1px solid #eee;">
+            <thead><tr>
+              <th>Development Area</th><th>Outcome</th><th>Strategy</th><th>PAPs</th><th>Performance Indicator</th>
+            </tr></thead>
+            <tbody><tr>
+              <td>${esc(plan.developmentArea)}</td>
+              <td>${esc(plan.outcome)}</td>
+              <td>${esc(plan.strategy)}</td>
+              <td>${esc(row.pap)}</td>
+              <td>${esc(row.perfIndicator)}</td>
+            </tr></tbody>
+          </table>
+          <div class="dash-card-body">
+            <div class="dash-left">
+              <div style="font-size:0.72rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Actual vs Target</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;">Total Quarter (Q1+Q2+Q3+Q4)</div>
+              <div class="donut-wrap">
+                <canvas id="${canvasId}" data-hasdata="${hasData}" data-actual="${tPct}" data-target="${aPct}"></canvas>
+                <div class="donut-center">
+                  <div class="pct">${hasData ? tPct + '%' : 'N/A'}</div>
+                  <div class="lbl">${hasData ? 'Actual' : 'No Data'}</div>
+                </div>
               </div>
-            `).join('')}
+              <div class="donut-legend">
+                <span><span class="legend-dot" style="background:${hasData ? '#f9a825' : '#e0e0e0'};"></span>Actual ${hasData ? tPct+'%' : 'N/A'}</span>
+                <span><span class="legend-dot" style="background:${hasData ? '#212121' : '#e0e0e0'};"></span>Target ${hasData ? aPct+'%' : 'N/A'}</span>
+              </div>
+              ${row.proofFile ? `<div class="proof-link"><br/><strong style="font-size:0.72rem;color:var(--text-muted);">PROOF/EVIDENCE</strong><br/><a href="${row.proofFile}" target="_blank">[ VIEW ]</a></div>` : `<div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted);">No proof uploaded</div>`}
+            </div>
+            <div class="dash-right">
+              <div class="dash-info-grid">
+                <div class="dash-info-item">
+                  <div class="dash-info-label">Office Concerned</div>
+                  <div class="dash-info-value">${esc(row.officeConcerned)||'—'}</div>
+                </div>
+                <div class="dash-info-item">
+                  <div class="dash-info-label">Total Est. Cost</div>
+                  <div class="dash-info-value">₱${(row.totalEstCost||0).toLocaleString()}</div>
+                </div>
+                <div class="dash-info-item">
+                  <div class="dash-info-label">Fund Source</div>
+                  <div class="dash-info-value">${esc(row.fundSource)||'—'}</div>
+                </div>
+                <div class="dash-info-item">
+                  <div class="dash-info-label">Risk</div>
+                  <div class="dash-info-value">${esc(row.risk)||'—'}</div>
+                </div>
+                <div class="dash-info-item" style="grid-column:1/-1;">
+                  <div class="dash-info-label">Mitigating Activities</div>
+                  <div class="dash-info-value">${esc(row.mitigatingActivities)||'—'}</div>
+                </div>
+                <div class="dash-info-item">
+                  <div class="dash-info-label">Risk Assessment</div>
+                  <div class="dash-info-value">${esc(row.riskAssessment)||'—'}</div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="dash-footer">
             ${showViewAllBtn ? `<button class="btn-dash-action" onclick="showDashboardSingle('${plan._id}')">View All ${plan.rows.length} Rows</button>` : ''}
@@ -575,9 +623,16 @@ async function loadDashboard() {
             <button class="btn-dash-action" style="background:#c62828; border-color:#c62828; color:#fff;" onclick="deletePlan('${plan._id}')">Delete</button>
           </div>
         </div>`;
+      });
     });
-
     cont.innerHTML = html;
+    
+    document.querySelectorAll('#dashboard-content canvas[id^="donut-"]').forEach(canvas => {
+      const hasData = canvas.getAttribute('data-hasdata') === 'true';
+      const actual = parseInt(canvas.getAttribute('data-actual'));
+      const target = parseInt(canvas.getAttribute('data-target'));
+      drawDonut(canvas.id, actual, target, hasData);
+    });
 
   } catch(e) {
     cont.innerHTML = `<div style="color:var(--red);padding:20px;">Error: ${e.message}</div>`;
@@ -612,56 +667,110 @@ async function loadDashboardSingle(id) {
       </div>
     `;
 
-    html += `
+      plan.rows.forEach((row, ri) => {
+      const totalTarget = parseQValue(row.targetQ1) + parseQValue(row.targetQ2) + parseQValue(row.targetQ3) + parseQValue(row.targetQ4);
+      const totalActual = parseQValue(row.actualQ1) + parseQValue(row.actualQ2) + parseQValue(row.actualQ3) + parseQValue(row.actualQ4);
+      
+      let tPct = 0;
+      let aPct = 0;
+      let hasData = false;
+
+      if (totalTarget > 0) {
+        tPct = Math.round((totalActual / totalTarget) * 100);
+        aPct = Math.max(0, 100 - tPct);
+        hasData = true;
+      } else if (totalActual > 0) {
+        tPct = 100;
+        aPct = 0;
+        hasData = true;
+      }
+
+      const canvasId = `donut-single-${plan._id}-${ri}`; 
+      const subtotal = plan.rows.reduce((s,r)=>s+(r.totalEstCost||0),0);
+      const isLastRow = (ri === plan.rows.length - 1);
+
+      html += `
       <div class="dashboard-card" data-planid="${plan._id}">
         <div class="dash-card-header">
           <span>FY 2026 Annual Operational Plan · College of Engineering Alangilan Campus</span>
           <span class="dash-id-badge">ID NO. ${plan.idNo}</span>
-          <span class="dash-id-badge">Rows: ${plan.rows.length}</span>
+          <span class="dash-id-badge">ROW NO. ${ri+1}</span>
         </div>
-        <div class="dashboard-excel">
-          <div class="excel-row excel-header">
-            <div>Development Area</div>
-            <div>Outcome</div>
-            <div>Strategy</div>
-            <div>PAPs</div>
-            <div>Performance Indicator</div>
-            <div>Targets (Q1/Q2/Q3/Q4)</div>
-            <div>Actuals (Q1/Q2/Q3/Q4)</div>
-            <div>Office</div>
-            <div>Est. Cost</div>
-            <div>Fund</div>
-            <div>Risk</div>
-            <div>Mitigating Activities</div>
-            <div>Proof</div>
-          </div>
-          ${plan.rows.map((row, ri) => `
-            <div class="excel-row">
-              <div class="excel-cell">${esc(plan.developmentArea)}</div>
-              <div class="excel-cell">${esc(plan.outcome)}</div>
-              <div class="excel-cell">${esc(plan.strategy)}</div>
-              <div class="excel-cell">${esc(row.pap) || '—'}</div>
-              <div class="excel-cell">${esc(row.perfIndicator) || '—'}</div>
-              <div class="excel-cell">${esc(row.targetQ1||'')} / ${esc(row.targetQ2||'')} / ${esc(row.targetQ3||'')} / ${esc(row.targetQ4||'')}</div>
-              <div class="excel-cell">${esc(row.actualQ1||'')} / ${esc(row.actualQ2||'')} / ${esc(row.actualQ3||'')} / ${esc(row.actualQ4||'')}</div>
-              <div class="excel-cell">${esc(row.officeConcerned) || '—'}</div>
-              <div class="excel-cell">₱${(row.totalEstCost||0).toLocaleString()}</div>
-              <div class="excel-cell">${esc(row.fundSource) || '—'}</div>
-              <div class="excel-cell">${esc(row.risk) || '—'}</div>
-              <div class="excel-cell">${esc(row.mitigatingActivities) || '—'}</div>
-              <div class="excel-cell">${row.proofFile ? `<a href="${row.proofFile}" target="_blank">View</a>` : '—'}</div>
+        <table class="aop-table" style="border-bottom:1px solid #eee;">
+          <thead><tr>
+            <th>Development Area</th><th>Outcome</th><th>Strategy</th><th>PAPs</th><th>Performance Indicator</th>
+          </tr></thead>
+          <tbody><tr>
+            <td>${esc(plan.developmentArea)}</td>
+            <td>${esc(plan.outcome)}</td>
+            <td>${esc(plan.strategy)}</td>
+            <td>${esc(row.pap)}</td>
+            <td>${esc(row.perfIndicator)}</td>
+          </tr></tbody>
+        </table>
+        <div class="dash-card-body">
+          <div class="dash-left">
+            <div style="font-size:0.72rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Actual vs Target</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;">Total Quarter (Q1+Q2+Q3+Q4)</div>
+            <div class="donut-wrap">
+              <canvas id="${canvasId}" data-hasdata="${hasData}" data-actual="${tPct}" data-target="${aPct}"></canvas>
+              <div class="donut-center">
+                <div class="pct">${hasData ? tPct + '%' : 'N/A'}</div>
+                <div class="lbl">${hasData ? 'Actual' : 'No Data'}</div>
+              </div>
             </div>
-          `).join('')}
+            <div class="donut-legend">
+              <span><span class="legend-dot" style="background:${hasData ? '#f9a825' : '#e0e0e0'};"></span>Actual ${hasData ? tPct+'%' : 'N/A'}</span>
+              <span><span class="legend-dot" style="background:${hasData ? '#212121' : '#e0e0e0'};"></span>Target ${hasData ? aPct+'%' : 'N/A'}</span>
+            </div>
+            ${row.proofFile ? `<div class="proof-link"><br/><strong style="font-size:0.72rem;color:var(--text-muted);">PROOF/EVIDENCE</strong><br/><a href="${row.proofFile}" target="_blank">[ VIEW ]</a></div>` : `<div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted);">No proof uploaded</div>`}
+          </div> <div class="dash-right">
+            <div class="dash-info-grid">
+              <div class="dash-info-item">
+                <div class="dash-info-label">Office Concerned</div>
+                <div class="dash-info-value">${esc(row.officeConcerned)||'—'}</div>
+              </div>
+              <div class="dash-info-item">
+                <div class="dash-info-label">Total Est. Cost</div>
+                <div class="dash-info-value">₱${(row.totalEstCost||0).toLocaleString()}</div>
+              </div>
+              <div class="dash-info-item">
+                <div class="dash-info-label">Fund Source</div>
+                <div class="dash-info-value">${esc(row.fundSource)||'—'}</div>
+              </div>
+              <div class="dash-info-item">
+                <div class="dash-info-label">Risk</div>
+                <div class="dash-info-value">${esc(row.risk)||'—'}</div>
+              </div>
+              <div class="dash-info-item" style="grid-column:1/-1;">
+                <div class="dash-info-label">Mitigating Activities</div>
+                <div class="dash-info-value">${esc(row.mitigatingActivities)||'—'}</div>
+              </div>
+              <div class="dash-info-item">
+                <div class="dash-info-label">Risk Assessment</div>
+                <div class="dash-info-value">${esc(row.riskAssessment)||'—'}</div>
+              </div>
+            </div>
+            ${isLastRow ? `<div class="dash-subtotal">SUBTOTAL: <span>₱${subtotal.toLocaleString()}</span> (Sum Est. Cost)</div>` : ''}
+          </div>
         </div>
-        <div class="dash-subtotal">SUBTOTAL: <span>₱${plan.rows.reduce((s,r)=>s+(r.totalEstCost||0),0).toLocaleString()}</span></div>
+        ${isLastRow ? `
         <div class="dash-footer">
           <button class="btn-dash-action" onclick="printPlan('${plan._id}')">Print</button>
           <button class="btn-dash-action" onclick="openUpdate('${plan._id}')">Manage/Update</button>
           <button class="btn-dash-action" style="background:#c62828; border-color:#c62828; color:#fff;" onclick="deletePlan('${plan._id}')">Delete</button>
-        </div>
+        </div>` : ''}
       </div>`;
-
+    });
+    
     cont.innerHTML = html;
+    
+    document.querySelectorAll('#dashboard-content canvas[id^="donut-single-"]').forEach(canvas => {
+      const hasData = canvas.getAttribute('data-hasdata') === 'true';
+      const actual = parseInt(canvas.getAttribute('data-actual'));
+      const target = parseInt(canvas.getAttribute('data-target'));
+      drawDonut(canvas.id, actual, target, hasData);
+    });
 
   } catch(e) {
     cont.innerHTML = `<div style="color:var(--red);padding:20px;">Error: ${e.message}</div>`;
