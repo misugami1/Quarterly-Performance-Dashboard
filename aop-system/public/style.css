@@ -198,7 +198,7 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
   position: fixed; 
   inset: 0;
   /* 40% Red Overlay with bg2.png */
-  background: linear-gradient url('/image/bg3.jpg') center/cover no-repeat;
+  background: url('/image/bg3.jpg') center/cover no-repeat;
   z-index: -1;
 }
 
