@@ -432,7 +432,7 @@ async function loadRecords() {
     
     if (!plans || !plans.length) {
       cont.innerHTML = `<div class="page-title">Manage & Update Records</div>
-        <div style="background:#fff;border-radius:8px;padding:40px;text-align:center;color:var(--text-muted);">
+        <div style="background:#ffff;border-radius:8px;padding:40px;text-align:center;color:var(--text-muted);">
           No records found. <a href="#" onclick="showPage('page-create');initCreateForm()" style="color:var(--red);font-weight:600;">Create your first plan.</a>
         </div>`;
       return;
