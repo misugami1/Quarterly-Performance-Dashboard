@@ -39,17 +39,15 @@ function formatDate(d) {
 }
 
 function esc(s) { 
-  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); 
+  return String(s||'').trim().replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); 
 }
 
-// Smart Math Helper! Extracts numbers from text like "25%" or ignores "N/A"
 function parseQValue(val) {
   if (!val) return 0;
   const num = parseFloat(String(val).replace(/[^0-9.-]+/g,""));
   return isNaN(num) ? 0 : num;
 }
 
-// Custom Fetch Helper that automatically adds the Auth Token
 async function apiFetch(url, opts={}) {
   showLoading(true);
   try {
@@ -76,8 +74,7 @@ async function apiFetch(url, opts={}) {
   }
 }
 
-
-/* ===== AUTH (REAL BACKEND) ===== */
+/* ===== AUTH ===== */
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-password').value.trim();
@@ -136,7 +133,6 @@ function logout() {
   localStorage.removeItem('aop_token');
   showPage('page-login');
 }
-
 
 /* ===== CREATE & UPDATE FORM ===== */
 let rowCount = 1;
@@ -303,7 +299,7 @@ function removeRow(rowNo) {
   if (el) el.remove();
 }
 
-function moveRow(rowNo, dir) { /* simplified: just scrolls */ }
+function moveRow(rowNo, dir) { }
 
 function collectFormData() {
   const devArea = document.getElementById('f-devarea')?.value.trim();
@@ -345,8 +341,7 @@ function collectFormData() {
   return { developmentArea: devArea, outcome, strategy, rows };
 }
 
-
-/* ===== SAVING & UPDATING DATA (REAL BACKEND) ===== */
+/* ===== SAVING & UPDATING DATA ===== */
 async function savePlan() {
   const data = collectFormData();
   if (!data) return;
@@ -422,7 +417,7 @@ async function deletePlan(id) {
   }
 }
 
-/* ===== RECORDS TABLE (REAL BACKEND) ===== */
+/* ===== RECORDS TABLE ===== */
 async function loadRecords() {
   const cont = document.getElementById('records-content');
   cont.innerHTML = '<div class="page-title">Manage & Update Records</div><div style="padding:20px;color:#888;">Loading…</div>';
@@ -507,8 +502,18 @@ function addRowInUpdate() {
   cont.appendChild(div.firstElementChild);
 }
 
+/* ===== DASHBOARD NAVIGATION HELPERS ===== */
+function showDashboardAll() {
+  showPage('page-dashboard');
+  loadDashboard();
+}
 
-/* ===== DASHBOARD (REAL BACKEND) ===== */
+async function showDashboardSingle(id) {
+  showPage('page-dashboard');
+  await loadDashboardSingle(id);
+}
+
+/* ===== DASHBOARD ===== */
 async function loadDashboard() {
   const cont = document.getElementById('dashboard-content');
   cont.innerHTML = '<div style="padding:30px;color:#888;">Loading dashboard…</div>';
@@ -525,105 +530,108 @@ async function loadDashboard() {
     plans.forEach(plan => {
       if (!plan.rows || plan.rows.length === 0) return; 
 
-      const rowsToShow = [plan.rows[0]]; 
-      rowsToShow.forEach((row, index) => {
-        const ri = 0; 
-        
-        const totalTarget = parseQValue(row.targetQ1) + parseQValue(row.targetQ2) + parseQValue(row.targetQ3) + parseQValue(row.targetQ4);
-        const totalActual = parseQValue(row.actualQ1) + parseQValue(row.actualQ2) + parseQValue(row.actualQ3) + parseQValue(row.actualQ4);
-        
-        let tPct = 0;
-        let aPct = 0;
-        let hasData = false;
+      const subTotalCost = plan.rows.reduce((sum, r) => sum + parseFloat(r.totalEstCost || 0), 0);
 
-        if (totalTarget > 0) {
-          tPct = Math.round((totalActual / totalTarget) * 100);
-          aPct = Math.max(0, 100 - tPct);
-          hasData = true;
-        } else if (totalActual > 0) {
-          tPct = 100;
-          aPct = 0;
-          hasData = true;
-        }
+      // Dashboard all only shows the FIRST row as a preview
+      const row = plan.rows[0];
+      const totalTarget = parseQValue(row.targetQ1) + parseQValue(row.targetQ2) + parseQValue(row.targetQ3) + parseQValue(row.targetQ4);
+      const totalActual = parseQValue(row.actualQ1) + parseQValue(row.actualQ2) + parseQValue(row.actualQ3) + parseQValue(row.actualQ4);
+      
+      let tPct = 0, aPct = 0;
+      let hasData = false;
 
-        const canvasId = `donut-${plan._id}-${ri}`;
-        const subtotal = plan.rows.reduce((s,r)=>s+(r.totalEstCost||0),0);
-        
-        const showViewAllBtn = plan.rows.length > 1;
+      if (totalTarget > 0) {
+        tPct = Math.round((totalActual / totalTarget) * 100);
+        aPct = Math.max(0, 100 - tPct);
+        hasData = true;
+      } else if (totalActual > 0) {
+        tPct = 100; aPct = 0; hasData = true;
+      }
 
-        html += `
-        <div class="dashboard-card" data-planid="${plan._id}">
-          <div class="dash-card-header">
-            <span>FY 2026 Annual Operational Plan · College of Engineering Alangilan Campus</span>
-            <span class="dash-id-badge">ID NO. ${plan.idNo}</span>
-            <span class="dash-id-badge">ROW NO. ${ri+1}</span>
-          </div>
-          <table class="aop-table" style="border-bottom:1px solid #eee;">
-            <thead><tr>
-              <th>Development Area</th><th>Outcome</th><th>Strategy</th><th>PAPs</th><th>Performance Indicator</th>
-            </tr></thead>
-            <tbody><tr>
-              <td>${esc(plan.developmentArea)}</td>
-              <td>${esc(plan.outcome)}</td>
-              <td>${esc(plan.strategy)}</td>
-              <td>${esc(row.pap)}</td>
-              <td>${esc(row.perfIndicator)}</td>
-            </tr></tbody>
+      const canvasId = `donut-${plan._id}-preview`;
+      const showViewAllBtn = plan.rows.length > 1;
+
+      html += `
+      <div class="dashboard-card" data-planid="${plan._id}" style="border-radius:0; padding: 0;">
+        <div class="gsheet-wrapper">
+          <table class="gsheet-table">
+            <tbody>
+              <tr class="gsheet-top-header">
+                <td colspan="10">
+                  <span class="gs-title">FY 2026 Annual Operational Plan · College of Engineering Alangilan Campus</span>
+                  <span class="gs-badge">ID NO. ${plan.idNo}</span>
+                  <span class="gs-badge">TOTAL ROWS: ${plan.rows.length}</span>
+                </td>
+              </tr>
+              <tr class="gsheet-meta">
+                <th>Development Area</th><td colspan="9">${esc(plan.developmentArea)}</td>
+              </tr>
+              <tr class="gsheet-meta">
+                <th>Outcome</th><td colspan="9">${esc(plan.outcome)}</td>
+              </tr>
+              <tr class="gsheet-meta">
+                <th>Strategy</th><td colspan="9">${esc(plan.strategy)}</td>
+              </tr>
+              <tr class="gsheet-col-headers">
+                <th style="width:13%;">Programs, Activities and<br/>Projects (PAPs)</th>
+                <th style="width:10%;">Performance<br/>Indicator</th>
+                <th style="width:8%;">Personnel/<br/>Office</th>
+                <th style="width:17%;">Quarterly Targets (Milestones)</th>
+                <th style="width:12%;">Actuals vs Target</th>
+                <th style="width:8%;">Total Est. Cost</th>
+                <th style="width:8%;">Fund Source</th>
+                <th style="width:8%;">Risks</th>
+                <th style="width:8%;">Risk<br/>Assessment</th>
+                <th style="width:8%;">Mitigating<br/>Activities</th>
+              </tr>
+              <tr class="gsheet-content">
+                <td>${esc(row.pap) || '—'}</td>
+                <td style="text-align:center;">${esc(row.perfIndicator) || '—'}</td>
+                <td style="text-align:center;">${esc(row.officeConcerned) || '—'}</td>
+                <td style="padding:0; vertical-align:top;">
+                  <table class="ta-inner-table">
+                    <tr class="ta-head"><td>Target Q1</td><td>Target Q2</td><td>Target Q3</td><td>Target Q4</td></tr>
+                    <tr class="ta-val"><td>${esc(row.targetQ1)}</td><td>${esc(row.targetQ2)}</td><td>${esc(row.targetQ3)}</td><td>${esc(row.targetQ4)}</td></tr>
+                    <tr class="ta-head"><td>Actual Q1</td><td>Actual Q2</td><td>Actual Q3</td><td>Actual Q4</td></tr>
+                    <tr class="ta-val" style="border-bottom:none;"><td>${esc(row.actualQ1)}</td><td>${esc(row.actualQ2)}</td><td>${esc(row.actualQ3)}</td><td>${esc(row.actualQ4)}</td></tr>
+                  </table>
+                </td>
+                <td style="text-align:center; vertical-align:middle;">
+                  <div class="dash-chart-box">
+                    <div class="donut-wrap">
+                      <canvas id="${canvasId}" data-hasdata="${hasData}" data-actual="${tPct}" data-target="${aPct}"></canvas>
+                      <div class="donut-center">
+                        <div class="pct">${hasData ? tPct + '%' : 'N/A'}</div>
+                      </div>
+                    </div>
+                    <div style="font-size:0.55rem; font-weight:700; display:flex; gap:6px; justify-content:center; margin-top:4px;">
+                      <span style="color:var(--gold);">Actual ${hasData ? tPct+'%' : '-'}</span>
+                      <span style="color:var(--text);">Target ${hasData ? aPct+'%' : '-'}</span>
+                    </div>
+                    ${row.proofFile ? `<a href="${row.proofFile}" target="_blank" style="font-size:0.6rem; color:var(--red); font-weight:700; margin-top:6px; display:block; text-decoration:none;">[ VIEW PROOF ]</a>` : `<span style="font-size:0.6rem; color:var(--text-muted); display:block; margin-top:6px;">No proof</span>`}
+                  </div>
+                </td>
+                <td style="text-align:center; white-space:nowrap;">₱${(row.totalEstCost||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                <td style="text-align:center;">${esc(row.fundSource) || '—'}</td>
+                <td style="text-align:center;">${esc(row.risk) || '—'}</td>
+                <td style="text-align:center;">${esc(row.riskAssessment) || '—'}</td>
+                <td style="text-align:center;">${esc(row.mitigatingActivities) || '—'}</td>
+              </tr>
+              <tr style="background: #fff8f0;">
+                <td colspan="5" style="text-align:right; font-family:'Barlow Condensed', sans-serif; font-weight:800; font-size:0.95rem; color:var(--text); text-transform:uppercase;">SUB-TOTAL</td>
+                <td style="text-align:center; font-weight:800; font-size:0.9rem; color:var(--text); white-space:nowrap;">₱${subTotalCost.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                <td colspan="4"></td>
+              </tr>
+            </tbody>
           </table>
-          <div class="dash-card-body">
-            <div class="dash-left">
-              <div style="font-size:0.72rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Actual vs Target</div>
-              <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;">Total Quarter (Q1+Q2+Q3+Q4)</div>
-              <div class="donut-wrap">
-                <canvas id="${canvasId}" data-hasdata="${hasData}" data-actual="${tPct}" data-target="${aPct}"></canvas>
-                <div class="donut-center">
-                  <div class="pct">${hasData ? tPct + '%' : 'N/A'}</div>
-                  <div class="lbl">${hasData ? 'Actual' : 'No Data'}</div>
-                </div>
-              </div>
-              <div class="donut-legend">
-                <span><span class="legend-dot" style="background:${hasData ? '#f9a825' : '#e0e0e0'};"></span>Actual ${hasData ? tPct+'%' : 'N/A'}</span>
-                <span><span class="legend-dot" style="background:${hasData ? '#212121' : '#e0e0e0'};"></span>Target ${hasData ? aPct+'%' : 'N/A'}</span>
-              </div>
-              ${row.proofFile ? `<div class="proof-link"><br/><strong style="font-size:0.72rem;color:var(--text-muted);">PROOF/EVIDENCE</strong><br/><a href="${row.proofFile}" target="_blank">[ VIEW ]</a></div>` : `<div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted);">No proof uploaded</div>`}
-            </div>
-            <div class="dash-right">
-              <div class="dash-info-grid">
-                <div class="dash-info-item">
-                  <div class="dash-info-label">Office Concerned</div>
-                  <div class="dash-info-value">${esc(row.officeConcerned)||'—'}</div>
-                </div>
-                <div class="dash-info-item">
-                  <div class="dash-info-label">Total Est. Cost</div>
-                  <div class="dash-info-value">₱${(row.totalEstCost||0).toLocaleString()}</div>
-                </div>
-                <div class="dash-info-item">
-                  <div class="dash-info-label">Fund Source</div>
-                  <div class="dash-info-value">${esc(row.fundSource)||'—'}</div>
-                </div>
-                <div class="dash-info-item">
-                  <div class="dash-info-label">Risk</div>
-                  <div class="dash-info-value">${esc(row.risk)||'—'}</div>
-                </div>
-                <div class="dash-info-item" style="grid-column:1/-1;">
-                  <div class="dash-info-label">Mitigating Activities</div>
-                  <div class="dash-info-value">${esc(row.mitigatingActivities)||'—'}</div>
-                </div>
-                <div class="dash-info-item">
-                  <div class="dash-info-label">Risk Assessment</div>
-                  <div class="dash-info-value">${esc(row.riskAssessment)||'—'}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="dash-footer">
-            ${showViewAllBtn ? `<button class="btn-dash-action" onclick="showDashboardSingle('${plan._id}')">View All ${plan.rows.length} Rows</button>` : ''}
-            <button class="btn-dash-action" onclick="printPlan('${plan._id}')">Print</button>
-            <button class="btn-dash-action" onclick="openUpdate('${plan._id}')">Manage/Update</button>
-            <button class="btn-dash-action" style="background:#c62828; border-color:#c62828; color:#fff;" onclick="deletePlan('${plan._id}')">Delete</button>
-          </div>
-        </div>`;
-      });
+        </div>
+        <div class="dash-footer">
+          ${showViewAllBtn ? `<button class="btn-dash-action" onclick="showDashboardSingle('${plan._id}')">VIEW ALL ${plan.rows.length} ROWS</button>` : ''}
+          <button class="btn-dash-action" onclick="printPlan('${plan._id}')">PRINT</button>
+          <button class="btn-dash-action" onclick="openUpdate('${plan._id}')">MANAGE/UPDATE</button>
+          <button class="btn-dash-action" style="background:#c62828; border-color:#c62828; color:#fff;" onclick="deletePlan('${plan._id}')">DELETE</button>
+        </div>
+      </div>`;
     });
     cont.innerHTML = html;
     
@@ -639,16 +647,6 @@ async function loadDashboard() {
   }
 }
 
-function showDashboardAll() {
-  showPage('page-dashboard');
-  loadDashboard();
-}
-
-async function showDashboardSingle(id) {
-  showPage('page-dashboard');
-  await loadDashboardSingle(id);
-}
-
 async function loadDashboardSingle(id) {
   const cont = document.getElementById('dashboard-content');
   cont.innerHTML = '<div style="padding:30px;color:#888;">Loading plan details…</div>';
@@ -661,18 +659,53 @@ async function loadDashboardSingle(id) {
       return;
     }
 
+    const subTotalCost = plan.rows.reduce((sum, r) => sum + parseFloat(r.totalEstCost || 0), 0);
+
     let html = `
       <div style="margin-bottom: 16px;">
-        <button class="btn-secondary" style="background:var(--red); color:#fff; border:none;" onclick="showDashboardAll()">◀ Back to All Plans</button>
+        <button class="btn-secondary" style="background:var(--red); color:#fff; border:none;" onclick="showDashboardAll()">◀ BACK TO ALL PLANS</button>
       </div>
     `;
 
-      plan.rows.forEach((row, ri) => {
+    html += `
+    <div class="dashboard-card" data-planid="${plan._id}" style="border-radius:0; padding: 0;">
+      <div class="gsheet-wrapper">
+        <table class="gsheet-table">
+          <tbody>
+            <tr class="gsheet-top-header">
+              <td colspan="10">
+                <span class="gs-title">FY 2026 Annual Operational Plan · College of Engineering Alangilan Campus</span>
+                <span class="gs-badge">ID NO. ${plan.idNo}</span>
+                <span class="gs-badge">TOTAL ROWS: ${plan.rows.length}</span>
+              </td>
+            </tr>
+            <tr class="gsheet-meta">
+              <th>Development Area</th><td colspan="9">${esc(plan.developmentArea)}</td>
+            </tr>
+            <tr class="gsheet-meta">
+              <th>Outcome</th><td colspan="9">${esc(plan.outcome)}</td>
+            </tr>
+            <tr class="gsheet-meta">
+              <th>Strategy</th><td colspan="9">${esc(plan.strategy)}</td>
+            </tr>
+            <tr class="gsheet-col-headers">
+              <th style="width:13%;">Programs, Activities and<br/>Projects (PAPs)</th>
+              <th style="width:10%;">Performance<br/>Indicator</th>
+              <th style="width:8%;">Personnel/<br/>Office</th>
+              <th style="width:17%;">Quarterly Targets (Milestones)</th>
+              <th style="width:12%;">Actuals vs Target</th>
+              <th style="width:8%;">Total Est. Cost</th>
+              <th style="width:8%;">Fund Source</th>
+              <th style="width:8%;">Risks</th>
+              <th style="width:8%;">Risk<br/>Assessment</th>
+              <th style="width:8%;">Mitigating<br/>Activities</th>
+            </tr>`;
+
+    plan.rows.forEach((row, ri) => {
       const totalTarget = parseQValue(row.targetQ1) + parseQValue(row.targetQ2) + parseQValue(row.targetQ3) + parseQValue(row.targetQ4);
       const totalActual = parseQValue(row.actualQ1) + parseQValue(row.actualQ2) + parseQValue(row.actualQ3) + parseQValue(row.actualQ4);
       
-      let tPct = 0;
-      let aPct = 0;
+      let tPct = 0, aPct = 0;
       let hasData = false;
 
       if (totalTarget > 0) {
@@ -680,88 +713,66 @@ async function loadDashboardSingle(id) {
         aPct = Math.max(0, 100 - tPct);
         hasData = true;
       } else if (totalActual > 0) {
-        tPct = 100;
-        aPct = 0;
-        hasData = true;
+        tPct = 100; aPct = 0; hasData = true;
       }
 
       const canvasId = `donut-single-${plan._id}-${ri}`; 
-      const subtotal = plan.rows.reduce((s,r)=>s+(r.totalEstCost||0),0);
-      const isLastRow = (ri === plan.rows.length - 1);
 
+      /* ===== THIS IS WHERE THE MISSING PAPs COLUMN WAS RESTORED ===== */
       html += `
-      <div class="dashboard-card" data-planid="${plan._id}">
-        <div class="dash-card-header">
-          <span>FY 2026 Annual Operational Plan · College of Engineering Alangilan Campus</span>
-          <span class="dash-id-badge">ID NO. ${plan.idNo}</span>
-          <span class="dash-id-badge">ROW NO. ${ri+1}</span>
-        </div>
-        <table class="aop-table" style="border-bottom:1px solid #eee;">
-          <thead><tr>
-            <th>Development Area</th><th>Outcome</th><th>Strategy</th><th>PAPs</th><th>Performance Indicator</th>
-          </tr></thead>
-          <tbody><tr>
-            <td>${esc(plan.developmentArea)}</td>
-            <td>${esc(plan.outcome)}</td>
-            <td>${esc(plan.strategy)}</td>
-            <td>${esc(row.pap)}</td>
-            <td>${esc(row.perfIndicator)}</td>
-          </tr></tbody>
-        </table>
-        <div class="dash-card-body">
-          <div class="dash-left">
-            <div style="font-size:0.72rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Actual vs Target</div>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;">Total Quarter (Q1+Q2+Q3+Q4)</div>
-            <div class="donut-wrap">
-              <canvas id="${canvasId}" data-hasdata="${hasData}" data-actual="${tPct}" data-target="${aPct}"></canvas>
-              <div class="donut-center">
-                <div class="pct">${hasData ? tPct + '%' : 'N/A'}</div>
-                <div class="lbl">${hasData ? 'Actual' : 'No Data'}</div>
-              </div>
-            </div>
-            <div class="donut-legend">
-              <span><span class="legend-dot" style="background:${hasData ? '#f9a825' : '#e0e0e0'};"></span>Actual ${hasData ? tPct+'%' : 'N/A'}</span>
-              <span><span class="legend-dot" style="background:${hasData ? '#212121' : '#e0e0e0'};"></span>Target ${hasData ? aPct+'%' : 'N/A'}</span>
-            </div>
-            ${row.proofFile ? `<div class="proof-link"><br/><strong style="font-size:0.72rem;color:var(--text-muted);">PROOF/EVIDENCE</strong><br/><a href="${row.proofFile}" target="_blank">[ VIEW ]</a></div>` : `<div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted);">No proof uploaded</div>`}
-          </div> <div class="dash-right">
-            <div class="dash-info-grid">
-              <div class="dash-info-item">
-                <div class="dash-info-label">Office Concerned</div>
-                <div class="dash-info-value">${esc(row.officeConcerned)||'—'}</div>
-              </div>
-              <div class="dash-info-item">
-                <div class="dash-info-label">Total Est. Cost</div>
-                <div class="dash-info-value">₱${(row.totalEstCost||0).toLocaleString()}</div>
-              </div>
-              <div class="dash-info-item">
-                <div class="dash-info-label">Fund Source</div>
-                <div class="dash-info-value">${esc(row.fundSource)||'—'}</div>
-              </div>
-              <div class="dash-info-item">
-                <div class="dash-info-label">Risk</div>
-                <div class="dash-info-value">${esc(row.risk)||'—'}</div>
-              </div>
-              <div class="dash-info-item" style="grid-column:1/-1;">
-                <div class="dash-info-label">Mitigating Activities</div>
-                <div class="dash-info-value">${esc(row.mitigatingActivities)||'—'}</div>
-              </div>
-              <div class="dash-info-item">
-                <div class="dash-info-label">Risk Assessment</div>
-                <div class="dash-info-value">${esc(row.riskAssessment)||'—'}</div>
-              </div>
-            </div>
-            ${isLastRow ? `<div class="dash-subtotal">SUBTOTAL: <span>₱${subtotal.toLocaleString()}</span> (Sum Est. Cost)</div>` : ''}
-          </div>
-        </div>
-        ${isLastRow ? `
-        <div class="dash-footer">
-          <button class="btn-dash-action" onclick="printPlan('${plan._id}')">Print</button>
-          <button class="btn-dash-action" onclick="openUpdate('${plan._id}')">Manage/Update</button>
-          <button class="btn-dash-action" style="background:#c62828; border-color:#c62828; color:#fff;" onclick="deletePlan('${plan._id}')">Delete</button>
-        </div>` : ''}
-      </div>`;
+            <tr class="gsheet-content">
+              <td>
+                <span style="font-size:0.6rem; color:var(--red); font-weight:700; display:block; margin-bottom:4px;">[ ROW NO. ${ri+1} ]</span>
+                ${esc(row.pap) || '—'}
+              </td>
+              <td style="text-align:center;">${esc(row.perfIndicator) || '—'}</td>
+              <td style="text-align:center;">${esc(row.officeConcerned) || '—'}</td>
+              <td style="padding:0; vertical-align:top;">
+                <table class="ta-inner-table">
+                  <tr class="ta-head"><td>Target Q1</td><td>Target Q2</td><td>Target Q3</td><td>Target Q4</td></tr>
+                  <tr class="ta-val"><td>${esc(row.targetQ1)}</td><td>${esc(row.targetQ2)}</td><td>${esc(row.targetQ3)}</td><td>${esc(row.targetQ4)}</td></tr>
+                  <tr class="ta-head"><td>Actual Q1</td><td>Actual Q2</td><td>Actual Q3</td><td>Actual Q4</td></tr>
+                  <tr class="ta-val" style="border-bottom:none;"><td>${esc(row.actualQ1)}</td><td>${esc(row.actualQ2)}</td><td>${esc(row.actualQ3)}</td><td>${esc(row.actualQ4)}</td></tr>
+                </table>
+              </td>
+              <td style="text-align:center; vertical-align:middle;">
+                <div class="dash-chart-box">
+                  <div class="donut-wrap">
+                    <canvas id="${canvasId}" data-hasdata="${hasData}" data-actual="${tPct}" data-target="${aPct}"></canvas>
+                    <div class="donut-center">
+                      <div class="pct">${hasData ? tPct + '%' : 'N/A'}</div>
+                    </div>
+                  </div>
+                  <div style="font-size:0.55rem; font-weight:700; display:flex; gap:6px; justify-content:center; margin-top:4px;">
+                    <span style="color:var(--gold);">Actual ${hasData ? tPct+'%' : '-'}</span>
+                    <span style="color:var(--text);">Target ${hasData ? aPct+'%' : '-'}</span>
+                  </div>
+                  ${row.proofFile ? `<a href="${row.proofFile}" target="_blank" style="font-size:0.6rem; color:var(--red); font-weight:700; margin-top:6px; display:block; text-decoration:none;">[ VIEW PROOF ]</a>` : `<span style="font-size:0.6rem; color:var(--text-muted); display:block; margin-top:6px;">No proof</span>`}
+                </div>
+              </td>
+              <td style="text-align:center; white-space:nowrap;">₱${(row.totalEstCost||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+              <td style="text-align:center;">${esc(row.fundSource) || '—'}</td>
+              <td style="text-align:center;">${esc(row.risk) || '—'}</td>
+              <td style="text-align:center;">${esc(row.riskAssessment) || '—'}</td>
+              <td style="text-align:center;">${esc(row.mitigatingActivities) || '—'}</td>
+            </tr>`;
     });
+
+    html += `
+            <tr style="background: #fff8f0;">
+              <td colspan="5" style="text-align:right; font-family:'Barlow Condensed', sans-serif; font-weight:800; font-size:0.95rem; color:var(--text); text-transform:uppercase;">SUB-TOTAL: </td>
+              <td style="text-align:center; font-weight:800; font-size:0.9rem; color:var(--text); white-space:nowrap;">₱${subTotalCost.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+              <td colspan="4"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="dash-footer">
+        <button class="btn-dash-action" onclick="printPlan('${plan._id}')">PRINT ALL ROWS</button>
+        <button class="btn-dash-action" onclick="openUpdate('${plan._id}')">MANAGE/UPDATE</button>
+        <button class="btn-dash-action" style="background:#c62828; border-color:#c62828; color:#fff;" onclick="deletePlan('${plan._id}')">DELETE</button>
+      </div>
+    </div>`;
     
     cont.innerHTML = html;
     
@@ -783,7 +794,7 @@ function drawDonut(id, actual, target, hasData = true) {
   if (!canvas) return;
   
   const chartData = hasData ? [actual, Math.max(target, 0)] : [1];
-  const chartColors = hasData ? ['#f9a825', '#212121'] : ['#e0e0e0']; // Turns gray if no data
+  const chartColors = hasData ? ['#f9a825', '#212121'] : ['#e0e0e0'];
 
   new Chart(canvas, {
     type: 'doughnut',
@@ -792,6 +803,8 @@ function drawDonut(id, actual, target, hasData = true) {
       datasets:[{ data: chartData, backgroundColor: chartColors, borderWidth:0 }]
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false, 
       cutout: '65%',
       plugins: { legend: { display: false }, tooltip: { enabled: false } },
       animation: { duration: 700 }

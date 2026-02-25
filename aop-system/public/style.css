@@ -186,18 +186,16 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
   display: none; 
   min-height: 100vh; 
   flex-direction: column; 
-  background: transparent; /* Makes all pages transparent so the bg shows through */
+  background: transparent;
   position: relative;
   z-index: 1;
 }
 .page.active { display: flex; }
 
-/* Global Background for ALL inner pages (Home, Create, Records, Dashboard) */
 .page::before {
   content: '';
   position: fixed; 
   inset: 0;
-  /* 40% Red Overlay with bg3.jpg */
   background: url('/images/bg3.jpg') center/cover no-repeat;
   opacity: 0.30;
   z-index: -1;
@@ -346,8 +344,8 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
 }
 .btn-menu:hover { opacity: 0.9; transform: translateX(4px); }
 
-/* ===== CONTENT AREA ===== */
-.content { flex: 1; padding: 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+/* ===== CONTENT AREA (EXPANDED TO FIX CRAMPING) ===== */
+.content { flex: 1; padding: 24px; max-width: 98%; margin: 0 auto; width: 100%; }
 
 /* ===== PAGE TITLE ===== */
 .page-title {
@@ -635,112 +633,6 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
   font-size: 0.78rem;
 }
 
-.dash-card-body {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 0;
-}
-
-.dash-left {
-  border-right: 1px solid #e0e0e0;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.donut-wrap {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin-bottom: 10px;
-}
-.donut-wrap canvas { width: 120px !important; height: 120px !important; }
-.donut-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  pointer-events: none;
-}
-.donut-center .pct {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--text);
-  line-height: 1;
-}
-.donut-center .lbl { font-size: 0.6rem; color: var(--text-muted); }
-
-.donut-legend {
-  display: flex;
-  gap: 14px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-.donut-legend span { display: flex; align-items: center; gap: 5px; }
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.proof-link {
-  margin-top: 10px;
-  text-align: center;
-}
-.proof-link a {
-  font-size: 0.78rem;
-  color: var(--red);
-  text-decoration: none;
-  font-weight: 600;
-  border: 1px solid var(--red);
-  padding: 3px 10px;
-  border-radius: 4px;
-}
-.proof-link a:hover { background: var(--red); color: #fff; }
-
-.dash-right { padding: 14px 16px; }
-.dash-info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.dash-info-item {
-  padding: 4px 0;
-  border-bottom: 1px dashed #eee;
-}
-/* Remove the border from the very last item in the grid */
-.dash-info-item:last-child {
-  border-bottom: none;
-}
-.dash-info-label {
-  font-size: 0.66rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--red);
-  margin-bottom: 2px;
-}
-.dash-info-value {
-  font-size: 0.82rem;
-  color: var(--text);
-  font-weight: 500;
-}
-
-.dash-subtotal {
-  border-top: 2px solid #f5f5f5;
-  padding: 8px 16px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text);
-  background: #fafafa;
-}
-.dash-subtotal span { color: var(--red); }
-
 .dash-footer {
   padding: 12px 16px;
   background: linear-gradient(90deg, var(--red-dark), var(--red));
@@ -810,50 +702,161 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 680px) {
-  .dash-card-body { grid-template-columns: 1fr; }
-  .dash-left { border-right: none; border-bottom: 1px solid #e0e0e0; }
-  .content { padding: 14px; }
+/* ===== GSHEET DASHBOARD STYLES (FIXED) ===== */
+.gsheet-wrapper {
+  width: 100%;
+  overflow-x: auto; 
+  background: #fff;
+}
+.gsheet-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: #fff;
+  border: 1px solid #000;
+}
+.gsheet-table th, .gsheet-table td {
+  border: 1px solid #000;
+  padding: 8px 4px;
+  vertical-align: top;
+  word-wrap: break-word; 
+  overflow-wrap: break-word; 
+  empty-cells: show;
+  font-size: 0.75rem; 
+  color: #000;
+}
+.ta-inner-table td {
+  border: 1px solid #000;
+  border-top: none;
+  padding: 4px 1px;
+  width: 25%;
+  font-size: 0.65rem !important; 
+}
+.gsheet-top-header td {
+  background: var(--red-dark);
+  color: #fff;
+  padding: 10px 14px;
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  border: 1px solid #000;
+}
+.gs-title {
+  font-weight: 800;
+  font-size: 1rem;
+  margin-right: 15px;
+}
+.gs-badge {
+  font-weight: 700;
+  font-size: 0.8rem;
+  background: rgba(255,255,255,0.25);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-right: 10px;
+}
+.gsheet-meta th, .gsheet-meta td {
+  background: #e06666; 
+  color: #000; 
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 6px 14px;
+  border: 1px solid #000;
+  text-transform: capitalize;
+}
+.gsheet-meta th {
+  width: 1%;
+  white-space: nowrap;
+  text-align: left;
+}
+.gsheet-col-headers th {
+  background: #fdd835; 
+  color: #000;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid #000;
+  padding: 6px;
+}
+.ta-inner-table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+.ta-inner-table td:first-child { border-left: none; }
+.ta-inner-table td:last-child { border-right: none; }
+.ta-head td {
+  background: #fdd835;
+  font-weight: 700;
+  font-family: 'Barlow Condensed', sans-serif;
+}
+.ta-val td {
+  background: #fff;
+  font-weight: 600;
+}
+.dash-chart-box {
+  padding: 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.donut-wrap {
+  position: relative;
+  width: 70px !important;
+  height: 70px !important;
+  margin: 4px auto;
+}
+.donut-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+.donut-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+.donut-center .pct {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
 }
 
 /* ===== PRINT STYLES ===== */
 @media print {
-  /* 1. Hide background images on print so you don't waste ink! */
-  .page::before, #page-login::before { 
-    display: none !important; 
-  }
-
-  /* 2. Hide everything we don't want to print */
-  .topnav,
-  .dash-footer,
-  .btn-home,
-  .btn-secondary,
-  .btn-dash-action,
-  .toast,
-  .loading-overlay {
-    display: none !important;
-  }
-  .hide-for-print {
-    display: none !important;
-  }
-
-  /* 3. Make the background white to save ink */
   body, .page {
+    zoom: 85%;
     background: #ffffff !important;
     margin: 0 !important;
     padding: 0 !important;
     min-height: auto !important;
   }
-
-  /* 4. Remove the content padding so it stretches to the paper edges */
+  @page { 
+    size: landscape; 
+    margin: 10mm;
+  }
+  .page::before, #page-login::before { 
+    display: none !important; 
+  }
+  .topnav, .dash-footer, .btn-home, .btn-secondary, .btn-dash-action, .toast, .loading-overlay {
+    display: none !important;
+  }
+  .hide-for-print {
+    display: none !important;
+  }
   .content {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
   }
-
-  /* 5. Format the Dashboard Header for paper */
   .dashboard-header-bar {
     background: #ffffff !important;
     color: var(--red) !important;
@@ -862,19 +865,25 @@ html, body { height: 100%; font-family: 'Barlow', sans-serif; }
     margin-bottom: 20px;
     text-align: center;
   }
-
-  /* 6. Clean up the cards (remove shadows, add solid borders) */
   .dashboard-card {
     box-shadow: none !important;
-    border: 2px solid #ddd !important;
+    border: 2px solid #000 !important;
     margin-bottom: 30px !important;
-    /* This prevents a single card from being cut in half across two pages */
-    page-break-inside: avoid !important; 
-    break-inside: avoid !important;
+    page-break-inside: auto !important; 
+    break-inside: auto !important;
   }
-
-  /* 7. Ensure the card header keeps its colors when printing (Browsers sometimes strip background colors on print) */
+  .gsheet-wrapper {
+    overflow: visible !important;
+  }
+  .gsheet-table {
+    width: 100% !important;
+  }
   .dash-card-header {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  /* Ensure backgrounds like the red top header print out in color */
+  .gsheet-top-header td, .gsheet-meta th, .gsheet-meta td, .gsheet-col-headers th, .ta-head td {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
