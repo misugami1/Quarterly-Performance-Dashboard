@@ -722,9 +722,6 @@ async function loadDashboardSingle(id) {
       html += `
             <tr class="gsheet-content">
               <td>
-                <span style="font-size:0.6rem; color:var(--red); font-weight:700; display:block; margin-bottom:4px;">[ ROW NO. ${ri+1} ]</span>
-                ${esc(row.pap) || '—'}
-              </td>
               <td style="text-align:center;">${esc(row.perfIndicator) || '—'}</td>
               <td style="text-align:center;">${esc(row.officeConcerned) || '—'}</td>
               <td style="padding:0; vertical-align:top;">
