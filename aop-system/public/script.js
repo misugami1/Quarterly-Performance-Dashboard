@@ -502,6 +502,7 @@ function addRowInUpdate() {
   cont.appendChild(div.firstElementChild);
 }
 
+// 👉 FIX: Added these two missing helpers. Without them, the "View" buttons do nothing!
 /* ===== DASHBOARD NAVIGATION HELPERS ===== */
 function showDashboardAll() {
   showPage('page-dashboard');
@@ -530,6 +531,7 @@ async function loadDashboard() {
     plans.forEach(plan => {
       if (!plan.rows || plan.rows.length === 0) return; 
 
+      // 👉 FIX: Added this math to calculate the Total Estimated Cost for the bottom row
       const subTotalCost = plan.rows.reduce((sum, r) => sum + parseFloat(r.totalEstCost || 0), 0);
 
       // Dashboard all only shows the FIRST row as a preview
@@ -584,13 +586,10 @@ async function loadDashboard() {
                 <th style="width:8%;">Risk<br/>Assessment</th>
                 <th style="width:8%;">Mitigating<br/>Activities</th>
               </tr>
-              <tr class="gsheet-content">
-                <td style="white-space: pre-wrap;">
-                  <span style="font-size:0.6rem; color:var(--red); font-weight:700; display:block; margin-bottom:4px;">[ ROW NO. 1 ]</span>
-                  ${esc(row.pap) || '—'}
-                </td>
-                <td style="text-align:center; white-space: pre-wrap;">${esc(row.perfIndicator) || '—'}</td>
-                <td style="text-align:center;">${esc(row.officeConcerned) || '—'}</td>
+                <tr class="gsheet-content">
+                <td style="text-align:left; white-space: pre-wrap;">${esc(row.pap) || '—'}</td>
+                <td style="text-align:left; white-space: pre-wrap;">${esc(row.perfIndicator) || '—'}</td>
+                <td style="text-align:left;">${esc(row.officeConcerned) || '—'}</td>
                 <td style="padding:0; vertical-align:top;">
                   <table class="ta-inner-table">
                     <tr class="ta-head"><td>Target Q1</td><td>Target Q2</td><td>Target Q3</td><td>Target Q4</td></tr>
@@ -615,6 +614,7 @@ async function loadDashboard() {
                   </div>
                 </td>
                 <td style="text-align:center; white-space:nowrap;">₱${(row.totalEstCost||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                
                 <td style="text-align:center;">${esc(row.fundSource) || '—'}</td>
                 <td style="text-align:center;">${esc(row.risk) || '—'}</td>
                 <td style="text-align:center;">${esc(row.riskAssessment) || '—'}</td>
@@ -662,6 +662,7 @@ async function loadDashboardSingle(id) {
       return;
     }
 
+    // 👉 FIX: Math calculation for the single view sub-total
     const subTotalCost = plan.rows.reduce((sum, r) => sum + parseFloat(r.totalEstCost || 0), 0);
 
     let html = `
@@ -722,13 +723,10 @@ async function loadDashboardSingle(id) {
       const canvasId = `donut-single-${plan._id}-${ri}`; 
 
       html += `
-            <tr class="gsheet-content">
-              <td style="white-space: pre-wrap;">
-                <span style="font-size:0.6rem; color:var(--red); font-weight:700; display:block; margin-bottom:4px;">[ ROW NO. ${ri+1} ]</span>
-                ${esc(row.pap) || '—'}
-              </td>
-              <td style="text-align:center; white-space: pre-wrap;">${esc(row.perfIndicator) || '—'}</td>
-              <td style="text-align:center;">${esc(row.officeConcerned) || '—'}</td>
+              <tr class="gsheet-content">
+              <td style="text-align:left; white-space: pre-wrap;">${esc(row.pap) || '—'}</td>
+              <td style="text-align:left; white-space: pre-wrap;">${esc(row.perfIndicator) || '—'}</td>
+              <td style="text-align:left;">${esc(row.officeConcerned) || '—'}</td>
               <td style="padding:0; vertical-align:top;">
                 <table class="ta-inner-table">
                   <tr class="ta-head"><td>Target Q1</td><td>Target Q2</td><td>Target Q3</td><td>Target Q4</td></tr>
@@ -753,6 +751,7 @@ async function loadDashboardSingle(id) {
                 </div>
               </td>
               <td style="text-align:center; white-space:nowrap;">₱${(row.totalEstCost||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+              
               <td style="text-align:center;">${esc(row.fundSource) || '—'}</td>
               <td style="text-align:center;">${esc(row.risk) || '—'}</td>
               <td style="text-align:center;">${esc(row.riskAssessment) || '—'}</td>
@@ -791,6 +790,8 @@ async function loadDashboardSingle(id) {
 }
 
 /* ===== CHARTS & PRINT ===== */
+// 👉 FIX: The file previously had TWO copies of drawDonut. I deleted the broken one and 
+// kept this one, which has "maintainAspectRatio: false" to stop the chart explosion!
 function drawDonut(id, actual, target, hasData = true) {
   const canvas = document.getElementById(id);
   if (!canvas) return;
@@ -829,6 +830,7 @@ function printPlan(planId) {
   });
 }
 
+// 👉 FIX: The file previously had TWO copies of this INIT section. I deleted the duplicate!
 /* ===== INIT ===== */
 window.addEventListener('DOMContentLoaded', () => {
   const token = localStorage.getItem('aop_token');
