@@ -585,8 +585,11 @@ async function loadDashboard() {
                 <th style="width:8%;">Mitigating<br/>Activities</th>
               </tr>
               <tr class="gsheet-content">
-                <td>${esc(row.pap) || '—'}</td>
-                <td style="text-align:center;">${esc(row.perfIndicator) || '—'}</td>
+                <td style="white-space: pre-wrap;">
+                  <span style="font-size:0.6rem; color:var(--red); font-weight:700; display:block; margin-bottom:4px;">[ ROW NO. 1 ]</span>
+                  ${esc(row.pap) || '—'}
+                </td>
+                <td style="text-align:center; white-space: pre-wrap;">${esc(row.perfIndicator) || '—'}</td>
                 <td style="text-align:center;">${esc(row.officeConcerned) || '—'}</td>
                 <td style="padding:0; vertical-align:top;">
                   <table class="ta-inner-table">
@@ -718,11 +721,13 @@ async function loadDashboardSingle(id) {
 
       const canvasId = `donut-single-${plan._id}-${ri}`; 
 
-      /* ===== THIS IS WHERE THE MISSING PAPs COLUMN WAS RESTORED ===== */
       html += `
             <tr class="gsheet-content">
-              <td>
-              <td style="text-align:center;">${esc(row.perfIndicator) || '—'}</td>
+              <td style="white-space: pre-wrap;">
+                <span style="font-size:0.6rem; color:var(--red); font-weight:700; display:block; margin-bottom:4px;">[ ROW NO. ${ri+1} ]</span>
+                ${esc(row.pap) || '—'}
+              </td>
+              <td style="text-align:center; white-space: pre-wrap;">${esc(row.perfIndicator) || '—'}</td>
               <td style="text-align:center;">${esc(row.officeConcerned) || '—'}</td>
               <td style="padding:0; vertical-align:top;">
                 <table class="ta-inner-table">
